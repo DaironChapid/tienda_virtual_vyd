@@ -13,6 +13,7 @@ model Producto {
   precio    Float
   stock     Int
   imagen    String?
+  tallas    String?
   createdAt DateTime @default(now())
 }
 
@@ -23,4 +24,15 @@ model Usuario {
   password  String
   rol       String   @default("usuario")
   createdAt DateTime @default(now())
+}
+
+model HeroImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  createdAt DateTime @default(now())
+}
+
+model Configuracion {
+  clave String @id
+  valor String
 }

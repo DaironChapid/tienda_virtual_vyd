@@ -66,12 +66,12 @@ export default function LoginModal() {
         className={`relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${visible ? "translate-y-0 scale-100" : "translate-y-8 scale-95"}`}
       >
         {/* Franja decorativa superior */}
-        <div className="h-2 w-full bg-gradient-to-r from-brand-pink-400 via-brand-pink-600 to-brand-pink-400" />
+        <div className="h-2 w-full bg-gradient-to-r from-brand-neutral-400 via-brand-neutral-600 to-brand-neutral-400" />
 
         {/* Botón cerrar */}
         <button
           onClick={cerrarLogin}
-          className="absolute top-4 right-4 text-gray-400 hover:text-brand-pink-600 transition-colors p-1 rounded-full hover:bg-brand-pink-50"
+          className="absolute top-4 right-4 text-gray-400 hover:text-brand-neutral-600 transition-colors p-1 rounded-full hover:bg-brand-neutral-50"
           aria-label="Cerrar"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -81,7 +81,7 @@ export default function LoginModal() {
           {/* Logo */}
           <div className="text-center">
             <div className="text-3xl mb-1">🌸</div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-brand-pink-600 to-brand-pink-400 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-brand-neutral-600 to-brand-neutral-400 bg-clip-text text-transparent">
               VYD Boutique
             </h2>
             <p className="text-gray-500 text-sm mt-1">
@@ -90,16 +90,16 @@ export default function LoginModal() {
           </div>
 
           {/* Tabs login / registro */}
-          <div className="flex bg-brand-pink-50 rounded-2xl p-1 gap-1">
+          <div className="flex bg-brand-neutral-50 rounded-2xl p-1 gap-1">
             <button
               onClick={() => cambiarModo("login")}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${modo === "login" ? "bg-white text-brand-pink-600 shadow-sm" : "text-gray-500 hover:text-brand-pink-500"}`}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${modo === "login" ? "bg-white text-brand-neutral-600 shadow-sm" : "text-gray-500 hover:text-brand-neutral-500"}`}
             >
               Iniciar sesión
             </button>
             <button
               onClick={() => cambiarModo("register")}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${modo === "register" ? "bg-white text-brand-pink-600 shadow-sm" : "text-gray-500 hover:text-brand-pink-500"}`}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${modo === "register" ? "bg-white text-brand-neutral-600 shadow-sm" : "text-gray-500 hover:text-brand-neutral-500"}`}
             >
               Registrarse
             </button>
@@ -116,7 +116,7 @@ export default function LoginModal() {
                   value={nombre}
                   onChange={e => setNombre(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink-300 focus:border-brand-pink-400 transition-all placeholder:text-gray-300"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-neutral-300 focus:border-brand-neutral-400 transition-all placeholder:text-gray-300"
                 />
               </div>
             )}
@@ -129,7 +129,7 @@ export default function LoginModal() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink-300 focus:border-brand-pink-400 transition-all placeholder:text-gray-300"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-neutral-300 focus:border-brand-neutral-400 transition-all placeholder:text-gray-300"
               />
             </div>
 
@@ -142,7 +142,7 @@ export default function LoginModal() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink-300 focus:border-brand-pink-400 transition-all placeholder:text-gray-300"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-neutral-300 focus:border-brand-neutral-400 transition-all placeholder:text-gray-300"
               />
             </div>
 
@@ -156,7 +156,7 @@ export default function LoginModal() {
             <button
               type="submit"
               disabled={cargando}
-              className="w-full py-3.5 bg-gradient-to-r from-brand-pink-600 to-brand-pink-500 text-white font-bold rounded-xl hover:from-brand-pink-700 hover:to-brand-pink-600 transition-all shadow-lg shadow-brand-pink-200 hover:shadow-brand-pink-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-gradient-to-r from-brand-neutral-600 to-brand-neutral-500 text-white font-bold rounded-xl hover:from-brand-neutral-700 hover:to-brand-neutral-600 transition-all shadow-lg shadow-brand-neutral-200 hover:shadow-brand-neutral-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {cargando ? (
                 <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
