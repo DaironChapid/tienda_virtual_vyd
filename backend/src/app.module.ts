@@ -9,9 +9,10 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { HeroModule } from './hero/hero.module';
 import { UploadModule } from './upload/upload.module';
 import { ConfiguracionModule } from './configuracion/configuracion.module';
+import { CategoriasModule } from './categorias/categorias.module';
 
 @Module({
-  imports: [ProductosModule, PrismaModule, AuthModule, UsuariosModule, HeroModule, UploadModule, ConfiguracionModule],
+  imports: [ProductosModule, PrismaModule, AuthModule, UsuariosModule, HeroModule, UploadModule, ConfiguracionModule, CategoriasModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

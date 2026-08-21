@@ -3,9 +3,14 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import ScrollReveal from "@/components/ScrollReveal";
+import ProductSkeleton from "@/components/ProductSkeleton";
 
 export default function Home() {
   const [productos, setProductos] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<any[]>([]);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>("Todas");
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,38 +18,27 @@ export default function Home() {
   const [textosConfig, setTextosConfig] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [tallasSeleccionadas, setTallasSeleccionadas] = useState<Record<string, string>>({});
+  const [quickViewProduct, setQuickViewProduct] = useState<any | null>(null);
+  const [quickViewTalla, setQuickViewTalla] = useState<string>("");
   const { usuario, abrirLogin } = useAuth();
+  const { addToCart } = useCart();
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleAgregarCarrito = (p: any) => {
-    if (!usuario) {
-      abrirLogin();
-      return;
-    }
-
+  const handleAgregarCarrito = (p: any, tallaOverride?: string) => {
     const tallas = p.tallas ? p.tallas.split(',').filter(Boolean) : [];
-    if (tallas.length > 0 && !tallasSeleccionadas[p.id]) {
+    const talla = tallaOverride || tallasSeleccionadas[p.id] || (tallas.length === 0 ? "Talla Única" : "");
+
+    if (tallas.length > 0 && !talla) {
       showToast("Por favor selecciona una talla antes de añadir al carrito.", "error");
       return;
     }
 
-    const tallaSeleccionada = tallas.length > 0 ? tallasSeleccionadas[p.id] : "Talla Única";
-
-    const numeroWhatsApp = "573202937619";
-    const mensaje = 
-      `¡Hola! 👋 Me interesa comprar una blusa de VYD Boutique 🌸\n\n` +
-      `👗 *Producto:* ${p.nombre} (Talla: ${tallaSeleccionada})\n` +
-      `💰 *Precio:* ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(p.precio)}\n\n` +
-      `👤 *Mi nombre:* ${usuario!.nombre}\n` +
-      `✉️ *Mi correo:* ${usuario!.email}\n\n` +
-      `¿Está disponible? ¡Me encantaría comprarlo! 💕`;
-
-      const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
-      window.open(url, "_blank");
+    addToCart(p, talla);
+    showToast("¡Producto añadido al carrito! 🛒", "success");
   };
 
   const [heroImages, setHeroImages] = useState<string[]>([
@@ -82,6 +76,12 @@ export default function Home() {
       })
       .catch(console.error);
 
+    // Fetch Categorias
+    fetch("http://localhost:3001/categorias")
+      .then(res => res.json())
+      .then(data => setCategorias(data))
+      .catch(console.error);
+
     // Fetch Products
     fetch("http://localhost:3001/productos")
       .then((res) => res.json())
@@ -95,6 +95,10 @@ export default function Home() {
         setLoading(false);
       });
   }, []);
+
+  const productosFiltrados = categoriaSeleccionada === "Todas"
+    ? productos
+    : productos.filter((p: any) => p.categoria?.nombre === categoriaSeleccionada);
 
   return (
     <div className="flex flex-col gap-16 pb-20 relative">
@@ -201,12 +205,19 @@ export default function Home() {
             <div className="h-1.5 w-20 bg-brand-neutral-500 mt-4 rounded-full"></div>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto">
-            {["Todas", "Seda", "Casual", "Fiesta", "Básicas"].map((cat) => (
+            <button
+              onClick={() => setCategoriaSeleccionada("Todas")}
+              className={`px-6 py-2.5 rounded-full border text-sm font-medium transition-all whitespace-nowrap ${categoriaSeleccionada === "Todas" ? "bg-brand-neutral-600 text-white border-brand-neutral-600" : "bg-white text-gray-700 border-gray-200 hover:border-brand-neutral-500 hover:text-brand-neutral-600"}`}
+            >
+              Todas
+            </button>
+            {categorias.map((cat) => (
               <button
-                key={cat}
-                className="px-6 py-2.5 rounded-full border border-gray-200 text-sm font-medium hover:border-brand-neutral-500 hover:text-brand-neutral-600 hover:bg-brand-neutral-50 transition-all whitespace-nowrap bg-white"
+                key={cat.id}
+                onClick={() => setCategoriaSeleccionada(cat.nombre)}
+                className={`px-6 py-2.5 rounded-full border text-sm font-medium transition-all whitespace-nowrap ${categoriaSeleccionada === cat.nombre ? "bg-brand-neutral-600 text-white border-brand-neutral-600" : "bg-white text-gray-700 border-gray-200 hover:border-brand-neutral-500 hover:text-brand-neutral-600"}`}
               >
-                {cat}
+                {cat.nombre}
               </button>
             ))}
           </div>
@@ -214,22 +225,52 @@ export default function Home() {
 
         {/* PRODUCT GRID */}
         {loading ? (
-          <div className="flex justify-center items-center py-24">
-            <div className="w-10 h-10 border-4 border-brand-neutral-200 border-t-brand-neutral-600 rounded-full animate-spin" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="text-center py-24 text-red-500 font-semibold">{error}</div>
-        ) : productos.length === 0 ? (
-          <div className="text-center py-24 text-gray-400 font-medium">No hay productos disponibles aún.</div>
+        ) : productosFiltrados.length === 0 ? (
+          <div className="text-center py-24 text-gray-400 font-medium">No hay productos disponibles en esta categoría.</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10">
-            {productos.map((p: any) => (
-              <div key={p.id} className="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100">
-                <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
+            {productosFiltrados.map((p: any, index: number) => (
+              <ScrollReveal key={p.id} delay={(index % 4) * 100}>
+              <div className="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100">
+                <div 
+                  className="relative aspect-[4/5] overflow-hidden bg-gray-50 cursor-pointer"
+                  onClick={() => { setQuickViewProduct(p); setQuickViewTalla(""); }}
+                >
                   {/* TAGS */}
-                  <div className="absolute top-4 left-4 z-10">
-                    <span className="bg-brand-neutral-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase shadow-sm">
-                      Nuevo
+                  <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                    {p.stock > 0 && p.stock <= 3 && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase shadow-sm animate-pulse">
+                        ¡Últimas {p.stock} unidades!
+                      </span>
+                    )}
+                    {p.stock === 0 && (
+                      <span className="bg-gray-800 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase shadow-sm">
+                        Agotado
+                      </span>
+                    )}
+                    {p.stock > 3 && (
+                      <span className="bg-brand-neutral-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase shadow-sm">
+                        Nuevo
+                      </span>
+                    )}
+                    {p.categoria && (
+                      <span className="bg-white/90 backdrop-blur-sm text-gray-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase shadow-sm border border-gray-200">
+                        {p.categoria.nombre}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Quick View icon */}
+                  <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="bg-white/90 backdrop-blur-sm text-gray-700 p-2 rounded-full shadow-md flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                     </span>
                   </div>
 
@@ -245,7 +286,7 @@ export default function Home() {
                   {/* QUICK ADD OVERLAY */}
                   <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
                     <button
-                      onClick={() => handleAgregarCarrito(p)}
+                      onClick={(e) => { e.stopPropagation(); handleAgregarCarrito(p); }}
                       disabled={p.stock === 0}
                       className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${p.stock > 0
                         ? "bg-white/95 text-gray-900 hover:bg-brand-neutral-600 hover:text-white"
@@ -300,8 +341,8 @@ export default function Home() {
                   )}
 
                   <div className="flex items-center justify-between mt-1">
-                    <span className={`text-[11px] font-bold uppercase tracking-wider ${p.stock > 0 ? "text-green-600" : "text-red-400"}`}>
-                      {p.stock > 0 ? `Stock: ${p.stock}` : "Sin Existencias"}
+                    <span className={`text-[11px] font-bold uppercase tracking-wider ${p.stock > 3 ? "text-green-600" : p.stock > 0 ? "text-orange-500" : "text-red-400"}`}>
+                      {p.stock > 3 ? `Stock: ${p.stock}` : p.stock > 0 ? `¡Solo quedan ${p.stock}!` : "Sin Existencias"}
                     </span>
                     <div className="flex gap-1 text-brand-neutral-400">
                       {[1, 2, 3, 4, 5].map(s => (
@@ -311,34 +352,141 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         )}
       </section>
 
+      {/* QUICK VIEW MODAL */}
+      {quickViewProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setQuickViewProduct(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col md:flex-row">
+              {/* Image */}
+              <div className="relative w-full md:w-1/2 aspect-[4/5] md:aspect-auto md:min-h-[500px] bg-gray-50 rounded-t-3xl md:rounded-l-3xl md:rounded-tr-none overflow-hidden">
+                <Image
+                  src={quickViewProduct.imagen || "/images/hero.png"}
+                  alt={quickViewProduct.nombre}
+                  fill
+                  className="object-cover"
+                  quality={95}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+                {quickViewProduct.stock > 0 && quickViewProduct.stock <= 3 && (
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-red-500 text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase shadow-lg animate-pulse">
+                      ¡Últimas {quickViewProduct.stock} unidades!
+                    </span>
+                  </div>
+                )}
+                <button 
+                  onClick={() => setQuickViewProduct(null)}
+                  className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:bg-white transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              </div>
 
-      {/* NEWSLETTER CTA */}
-      <section className="container mx-auto px-6">
-        <div className="bg-brand-neutral-50 rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden border border-brand-neutral-100">
-          <div className="relative z-10 max-w-2xl mx-auto space-y-8">
-            <span className="text-brand-neutral-600 font-bold tracking-widest text-xs uppercase">Newsletter</span>
-            <h3 className="text-3xl md:text-5xl font-bold text-gray-900">¡Únete a nuestra boutique!</h3>
-            <p className="text-gray-600 text-lg">
-              Recibe un 15% de descuento en tu primera compra y sé la primera en conocer nuestras nuevas colecciones.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <input
-                type="email"
-                placeholder="Tu email aquí..."
-                className="bg-white border border-brand-neutral-200 px-8 py-5 rounded-full text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-neutral-400 w-full sm:w-96 shadow-sm"
-              />
-              <button className="bg-brand-neutral-600 text-white px-10 py-5 rounded-full font-bold hover:bg-brand-neutral-700 transition-all shadow-lg hover:shadow-brand-neutral-200">
-                Suscribirme
-              </button>
+              {/* Info */}
+              <div className="flex-1 p-8 flex flex-col gap-5">
+                {quickViewProduct.categoria && (
+                  <span className="text-xs font-bold text-brand-neutral-600 uppercase tracking-widest">
+                    {quickViewProduct.categoria.nombre}
+                  </span>
+                )}
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{quickViewProduct.nombre}</h2>
+                <p className="text-3xl font-bold text-brand-neutral-700">
+                  {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(quickViewProduct.precio)}
+                </p>
+
+                {quickViewProduct.descripcion && (
+                  <p className="text-gray-500 leading-relaxed text-sm">{quickViewProduct.descripcion}</p>
+                )}
+
+                {/* Stock */}
+                <div className={`inline-flex items-center gap-2 text-sm font-bold ${quickViewProduct.stock > 3 ? "text-green-600" : quickViewProduct.stock > 0 ? "text-orange-500" : "text-red-500"}`}>
+                  <span className={`w-2 h-2 rounded-full ${quickViewProduct.stock > 3 ? "bg-green-500" : quickViewProduct.stock > 0 ? "bg-orange-500 animate-pulse" : "bg-red-500"}`}></span>
+                  {quickViewProduct.stock > 3 ? `${quickViewProduct.stock} unidades disponibles` : quickViewProduct.stock > 0 ? `¡Solo quedan ${quickViewProduct.stock} unidades!` : "Agotado"}
+                </div>
+
+                {/* Tallas */}
+                {quickViewProduct.tallas && quickViewProduct.tallas.split(',').filter(Boolean).length > 0 ? (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-3">Selecciona tu talla:</p>
+                    <div className="flex gap-3">
+                      {quickViewProduct.tallas.split(',').filter(Boolean).map((t: string) => (
+                        <button
+                          key={t}
+                          onClick={() => setQuickViewTalla(t)}
+                          className={`w-11 h-11 rounded-xl text-sm font-bold transition-all border-2 flex items-center justify-center ${
+                            quickViewTalla === t
+                              ? "bg-brand-neutral-600 text-white border-brand-neutral-600 shadow-lg scale-110"
+                              : "bg-white text-gray-600 border-gray-200 hover:border-brand-neutral-400"
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">Talla Única</p>
+                )}
+
+                {/* Add to cart */}
+                <button
+                  onClick={() => {
+                    const tallas = quickViewProduct.tallas ? quickViewProduct.tallas.split(',').filter(Boolean) : [];
+                    const talla = tallas.length > 0 ? quickViewTalla : "Talla Única";
+                    if (tallas.length > 0 && !quickViewTalla) {
+                      showToast("Selecciona una talla primero", "error");
+                      return;
+                    }
+                    handleAgregarCarrito(quickViewProduct, talla);
+                    setQuickViewProduct(null);
+                  }}
+                  disabled={quickViewProduct.stock === 0}
+                  className={`w-full py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 mt-4 ${
+                    quickViewProduct.stock > 0
+                      ? "bg-brand-neutral-900 text-white hover:bg-black shadow-xl hover:shadow-brand-neutral-200"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                  {quickViewProduct.stock > 0 ? "Añadir al Carrito" : "No Disponible"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </section>
+      )}
+
+
+      {/* NEWSLETTER CTA */}
+      <ScrollReveal>
+        <section className="container mx-auto px-6">
+          <div className="bg-brand-neutral-50 rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden border border-brand-neutral-100">
+            <div className="relative z-10 max-w-2xl mx-auto space-y-8">
+              <span className="text-brand-neutral-600 font-bold tracking-widest text-xs uppercase">Newsletter</span>
+              <h3 className="text-3xl md:text-5xl font-bold text-gray-900">¡Únete a nuestra boutique!</h3>
+              <p className="text-gray-600 text-lg">
+                Recibe un 15% de descuento en tu primera compra y sé la primera en conocer nuestras nuevas colecciones.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <input
+                  type="email"
+                  placeholder="Tu email aquí..."
+                  className="bg-white border border-brand-neutral-200 px-8 py-5 rounded-full text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-neutral-400 w-full sm:w-96 shadow-sm"
+                />
+                <button className="bg-brand-neutral-600 text-white px-10 py-5 rounded-full font-bold hover:bg-brand-neutral-700 transition-all shadow-lg hover:shadow-brand-neutral-200">
+                  Suscribirme
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </ScrollReveal>
 
     </div>
   );

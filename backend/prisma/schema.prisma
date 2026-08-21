@@ -8,13 +8,23 @@ datasource db {
 }
 
 model Producto {
-  id        Int      @id @default(autoincrement())
-  nombre    String
-  precio    Float
-  stock     Int
-  imagen    String?
-  tallas    String?
-  createdAt DateTime @default(now())
+  id          Int        @id @default(autoincrement())
+  nombre      String
+  precio      Float
+  stock       Int
+  imagen      String?
+  tallas      String?
+  createdAt   DateTime   @default(now())
+  categoriaId Int?
+  categoria   Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  descripcion String?    @db.Text
+}
+
+model Categoria {
+  id        Int        @id @default(autoincrement())
+  nombre    String     @unique
+  productos Producto[]
+  createdAt DateTime   @default(now())
 }
 
 model Usuario {

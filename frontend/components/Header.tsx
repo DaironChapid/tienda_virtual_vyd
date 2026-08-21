@@ -2,11 +2,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { usuario, abrirLogin, logout, esAdmin } = useAuth();
+  const { totalItems, setIsCartOpen } = useCart();
 
   return (
     <header className="sticky top-0 z-50 w-full bg-brand-neutral-50/90 backdrop-blur-md border-b-2 border-brand-neutral-200 shadow-sm">
@@ -45,8 +47,16 @@ export default function Header() {
           </button>
 
           {/* Carrito */}
-          <button className="p-2 text-gray-600 hover:text-brand-neutral-600 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
+          <button 
+            onClick={() => setIsCartOpen(true)}
+            className="p-2 text-gray-600 hover:text-brand-neutral-600 transition-colors relative"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
           </button>
 
           {/* LOGIN / USUARIO */}

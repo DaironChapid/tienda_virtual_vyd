@@ -10,7 +10,10 @@ export class ProductosService {
   }
 
   async obtenerProductos() {
-    return this.prisma.producto.findMany({ orderBy: { createdAt: 'desc' } });
+    return this.prisma.producto.findMany({ 
+      orderBy: { createdAt: 'desc' },
+      include: { categoria: true }
+    });
   }
 
   async actualizarProducto(id: number, data: any) {

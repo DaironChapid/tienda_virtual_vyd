@@ -4,7 +4,12 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 
-type Tab = "dashboard" | "productos" | "usuarios" | "carrusel";
+type Tab = "dashboard" | "productos" | "usuarios" | "carrusel" | "categorias";
+
+interface Categoria {
+  id: number;
+  nombre: string;
+}
 
 interface Product {
   id: string;
@@ -30,6 +35,8 @@ export default function AdminDashboard() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const [productos, setProductos] = useState<Product[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [categoriaModal, setCategoriaModal] = useState<{ isOpen: boolean; data: Partial<Categoria> | null }>({ isOpen: false, data: null });
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [heroImages, setHeroImages] = useState<{id: number, url: string}[]>([]);
   const [mostrarCarrusel, setMostrarCarrusel] = useState(true);
@@ -51,21 +58,25 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resProductos, resUsuarios, resHero, resConfig] = await Promise.all([
+      const [resProductos, resUsuarios, resHero, resConfig, resCategorias] = await Promise.all([
         fetch("http://localhost:3001/productos"),
         fetch("http://localhost:3001/usuarios"),
         fetch("http://localhost:3001/hero-images"),
         fetch("http://localhost:3001/configuracion"),
+        fetch("http://localhost:3001/categorias"),
       ]);
       const dataProductos = await resProductos.json();
       const dataUsuarios = await resUsuarios.json();
       const dataHero = await resHero.json();
       const dataConfig = await resConfig.json();
+      const dataCategorias = await resCategorias.json();
+      
       setProductos(dataProductos);
       setUsuarios(dataUsuarios);
       setHeroImages(dataHero);
       setMostrarCarrusel(dataConfig.mostrar_carrusel === 'true');
       setTextosConfig(dataConfig);
+      setCategorias(dataCategorias);
     } catch (error) {
       showToast("Error al cargar los datos", "error");
     } finally {
@@ -115,6 +126,8 @@ export default function AdminDashboard() {
       stock: Number(formData.get("stock")),
       imagen: finalImageUrl,
       tallas: tallasArray.join(","),
+      categoriaId: formData.get("categoriaId") ? Number(formData.get("categoriaId")) : null,
+      descripcion: formData.get("descripcion") || null,
     };
 
     const isEditing = !!productModal.data?.id;
@@ -149,6 +162,46 @@ export default function AdminDashboard() {
       showToast("Error al eliminar producto", "error");
     } finally {
       setDeleteConfirm(null);
+    }
+  };
+
+  // Categoria CRUD
+  const handleSaveCategoria = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const catData = { nombre: formData.get("nombre") };
+
+    const isEditing = !!categoriaModal.data?.id;
+    const url = isEditing
+      ? `http://localhost:3001/categorias/${categoriaModal.data.id}`
+      : "http://localhost:3001/categorias";
+    const method = isEditing ? "PUT" : "POST";
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(catData),
+      });
+      if (!res.ok) throw new Error("Error saving categoria");
+      
+      showToast(`Categoría ${isEditing ? 'actualizada' : 'creada'} con éxito`, "success");
+      setCategoriaModal({ isOpen: false, data: null });
+      fetchData();
+    } catch (error) {
+      showToast("Error al guardar categoría", "error");
+    }
+  };
+
+  const handleDeleteCategoria = async (id: number) => {
+    if(!confirm("¿Estás seguro de eliminar esta categoría?")) return;
+    try {
+      const res = await fetch(`http://localhost:3001/categorias/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Error deleting categoria");
+      showToast("Categoría eliminada con éxito", "success");
+      fetchData();
+    } catch (error) {
+      showToast("Error al eliminar categoría", "error");
     }
   };
 
@@ -363,6 +416,13 @@ export default function AdminDashboard() {
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
             Carrusel
+          </button>
+          <button
+            onClick={() => { setActiveTab("categorias"); setIsSidebarOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${activeTab === "categorias" ? "bg-brand-neutral-50 text-brand-neutral-700 shadow-sm border border-brand-neutral-100" : "hover:bg-brand-neutral-50/50 hover:text-brand-neutral-600"}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M4 22a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M4 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 22a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M20 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M20 22a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M20 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>
+            Categorías
           </button>
         </nav>
 
@@ -586,6 +646,67 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* CATEGORIAS TAB */}
+          {activeTab === "categorias" && (
+            <div className="animate-in fade-in duration-500">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                <h2 className="text-2xl font-bold text-gray-900">Gestión de Categorías</h2>
+                <button 
+                  onClick={() => setCategoriaModal({ isOpen: true, data: null })}
+                  className="bg-brand-neutral-600 hover:bg-brand-neutral-700 text-white px-5 py-2.5 rounded-full font-medium transition-colors flex items-center gap-2 shadow-sm shadow-brand-neutral-200"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                  Agregar Categoría
+                </button>
+              </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-brand-neutral-500 border-t-transparent rounded-full animate-spin"></div></div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-sm">
+                  <table className="w-full text-left text-sm text-gray-600">
+                    <thead className="bg-gray-50 text-gray-700 font-medium">
+                      <tr>
+                        <th className="px-6 py-4 rounded-tl-2xl w-24">ID</th>
+                        <th className="px-6 py-4">Nombre</th>
+                        <th className="px-6 py-4 text-right rounded-tr-2xl">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {categorias.map((cat) => (
+                        <tr key={cat.id} className="hover:bg-brand-neutral-50/30 transition-colors">
+                          <td className="px-6 py-4 font-mono text-xs text-gray-400">{cat.id}</td>
+                          <td className="px-6 py-4 font-medium text-gray-900">{cat.nombre}</td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button 
+                                onClick={() => setCategoriaModal({ isOpen: true, data: cat })}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Editar"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteCategoria(cat.id)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Eliminar"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {categorias.length === 0 && (
+                        <tr><td colSpan={3} className="px-6 py-8 text-center text-gray-500">No hay categorías registradas.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* CARRUSEL TAB */}
           {activeTab === "carrusel" && (
             <div className="animate-in fade-in duration-500">
@@ -747,6 +868,29 @@ export default function AdminDashboard() {
         </div>
       </main>
 
+      {/* CATEGORIA MODAL */}
+      {categoriaModal.isOpen && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-6">{categoriaModal.data?.id ? 'Editar Categoría' : 'Agregar Categoría'}</h3>
+            <form onSubmit={handleSaveCategoria} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la Categoría</label>
+                <input required name="nombre" defaultValue={categoriaModal.data?.nombre} type="text" className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-neutral-500 outline-none transition-all" />
+              </div>
+              <div className="flex gap-3 mt-8">
+                <button type="button" onClick={() => setCategoriaModal({ isOpen: false, data: null })} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit" className="flex-1 px-4 py-2.5 bg-brand-neutral-600 text-white rounded-xl font-medium hover:bg-brand-neutral-700 transition-colors">
+                  Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* PRODUCT MODAL */}
       {productModal.isOpen && (
         <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
@@ -756,6 +900,15 @@ export default function AdminDashboard() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                 <input required name="nombre" defaultValue={productModal.data?.nombre} type="text" className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-neutral-500 outline-none transition-all" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                <select name="categoriaId" defaultValue={(productModal.data as any)?.categoriaId || ""} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-neutral-500 outline-none transition-all bg-white">
+                  <option value="">Sin Categoría</option>
+                  {categorias.map(c => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -769,7 +922,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex flex-col gap-2">
                 <label className="block text-sm font-medium text-gray-700">Imagen del Producto</label>
-                <input name="imagen" defaultValue={productModal.data?.imagen} type="url" placeholder="URL (opcional)" className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-neutral-500 outline-none transition-all" />
+                <input name="imagen" defaultValue={productModal.data?.imagen} type="text" placeholder="URL o ruta de imagen (opcional)" className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-neutral-500 outline-none transition-all" />
                 <span className="text-xs text-gray-500 font-medium mt-1">O sube un archivo desde tu computadora:</span>
                 <input name="fileUpload" type="file" accept="image/*" className="w-full px-4 py-1.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-neutral-500 outline-none transition-all text-sm file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-neutral-50 file:text-brand-neutral-700 hover:file:bg-brand-neutral-100" />
               </div>
@@ -790,6 +943,10 @@ export default function AdminDashboard() {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Si no se selecciona ninguna talla, el producto se considerará de <strong>Talla Única</strong>.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>
+                <textarea name="descripcion" defaultValue={(productModal.data as any)?.descripcion || ""} rows={3} placeholder="Describe esta blusa para tus clientas..." className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-neutral-500 outline-none transition-all resize-none text-sm" />
               </div>
               <div className="flex gap-3 mt-8">
                 <button type="button" onClick={() => setProductModal({ isOpen: false, data: null })} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">

@@ -4,7 +4,10 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
 import LoginModal from "@/components/LoginModal";
+import CartDrawer from "@/components/CartDrawer";
+import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -25,12 +28,16 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${outfit.variable} font-outfit min-h-screen bg-white text-gray-900 antialiased flex flex-col`}>
         <AuthProvider>
-          <Header />
-          <LoginModal />
-          <main className="flex-grow">
-            {children}
-          </main>
-          <Footer />
+          <CartProvider>
+            <Header />
+            <LoginModal />
+            <CartDrawer />
+            <WhatsAppFloatingButton />
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Footer />
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>
